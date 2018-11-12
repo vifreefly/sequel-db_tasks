@@ -42,8 +42,8 @@ You can tweak settings using configure block:
 # Rakefile
 
 Sequel::DbTasks.configure do |config|
-  database_url: ENV["DATABASE_URL"], # default value
-  migrations_path: "db/migrate" # default value
+  config.database_url = ENV["DATABASE_URL"] # default value
+  config.migrations_path = "db/migrate"     # default value
 end
 
 Sequel::DbTasks.load!
@@ -51,7 +51,26 @@ Sequel::DbTasks.load!
 
 ## Notes
 
-Inspired by https://github.com/sandelius/sequel-rake
+* Inspired by https://github.com/sandelius/sequel-rake
+
+* Capistrano task to migrate database while deployning:
+
+```ruby
+# lib/capistrano/tasks/sequel_migrate.rake
+
+namespace :deploy do
+  desc "Migrate sequel db"
+  task :migrate do
+    on roles(:all) do
+      within release_path do
+        execute :rake, 'db:migrate'
+      end
+    end
+  end
+end
+
+after 'deploy:updated', 'deploy:migrate'
+```
 
 ## License
 
