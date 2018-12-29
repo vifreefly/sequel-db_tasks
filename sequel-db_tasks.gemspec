@@ -1,11 +1,9 @@
-
 lib = File.expand_path("../lib", __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "sequel/db_tasks/version"
 
 Gem::Specification.new do |spec|
   spec.name          = "sequel-db_tasks"
-  spec.version       = Sequel::DbTasks::VERSION
+  spec.version       = "0.1.0"
   spec.authors       = ["Victor Afanasev"]
   spec.email         = ["vicfreefly@gmail.com"]
 

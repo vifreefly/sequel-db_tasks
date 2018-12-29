@@ -1,5 +1,4 @@
 require 'ostruct'
-require "sequel/db_tasks/version"
 
 module Sequel
   module DbTasks
