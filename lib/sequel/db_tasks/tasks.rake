@@ -4,37 +4,66 @@ namespace :db do
   task :preload do
     require 'uri'
 
-    url = Sequel::DbTasks.configuration.database_url
-    uri = URI.parse(url)
+    @url = Sequel::DbTasks.configuration.database_url
+    uri = URI.parse(@url)
     raise "DB adapter is not postgres" if uri.scheme != "postgres"
-
-    @conf = {
-      url: url,
-      db: uri.path.sub("/", ""),
-      host: uri.host,
-      port: uri.port,
-      user: uri.user,
-      password: uri.password
-    }
   end
+
+  ###
 
   # https://www.postgresql.org/docs/current/app-createdb.html
   desc "Create database"
   task create: :preload do
-    env = { "PGPASSWORD" => @conf[:password] }
-    if system env, "createdb", @conf[:db], "-h", @conf[:host], "-p", @conf[:port].to_s, "-U", @conf[:user]
-      puts "Created database '#{@conf[:db]}'"
-    end
+    env = { "DATABASE_URL" => @url }
+    exec env, "postgressor", "createdb"
   end
 
-  # https://www.postgresql.org/docs/9.3/app-dropdb.html
+  # https://www.postgresql.org/docs/current/app-dropdb.html
   desc "Drop database"
   task drop: :preload do
-    env = { "PGPASSWORD" => @conf[:password] }
-    if system env, "dropdb", @conf[:db], "-h", @conf[:host], "-p", @conf[:port].to_s, "-U", @conf[:user]
-      puts "Dropped database '#{@conf[:db]}'"
-    end
+    env = { "DATABASE_URL" => @url }
+    exec env, "postgressor", "dropdb"
   end
+
+  ###
+
+  # https://www.postgresql.org/docs/current/app-pgdump.html
+  desc "Dump (backup) database"
+  task dump: :preload do
+    env = { "DATABASE_URL" => @url }
+    exec env, "postgressor", "dumpdb"
+  end
+
+  # https://www.postgresql.org/docs/current/app-pgrestore.html
+  desc "Restore database from backup"
+  task :restore, [:restore_dump_file_path] do |t, args|
+    raise "Restore dump file path is not provided" unless args.restore_dump_file_path
+    Rake::Task["db:preload"].execute
+
+    env = { "DATABASE_URL" => @url }
+    command = ["postgressor", "restoredb", args.restore_dump_file_path]
+    command << "--switch_to_superuser" if ENV["AS_SUPERUSER"] == "true"
+
+    exec env, *command
+  end
+
+  ###
+
+  # https://www.postgresql.org/docs/current/app-createuser.html
+  desc "Create database user" # superuser is optional
+  task create_user: :preload do
+    env = { "DATABASE_URL" => @url }
+    exec env, "postgressor", "createuser"
+  end
+
+  # https://www.postgresql.org/docs/current/app-dropuser.html
+  desc "Drop database user"
+  task drop_user: :preload do
+    env = { "DATABASE_URL" => @url }
+    exec env, "postgressor", "dropuser"
+  end
+
+  ###
 
   # https://github.com/jeremyevans/sequel/blob/master/doc/migration.rdoc#a-basic-migration
   desc "Generate migration file"
@@ -69,7 +98,7 @@ namespace :db do
     Sequel.extension :migration
     version = args[:version].to_i if args[:version]
 
-    Sequel.connect(@conf[:url], logger: Logger.new(STDOUT)) do |db|
+    Sequel.connect(@url, logger: Logger.new(STDOUT)) do |db|
       Sequel::Migrator.run(db, Sequel::DbTasks.configuration.migrations_path, target: version)
     end
   end
@@ -77,6 +106,6 @@ namespace :db do
   # https://github.com/jeremyevans/sequel/blob/master/doc/migration.rdoc#dumping-the-current-schema-as-a-migration
   desc "Print current database schema"
   task :'schema:print' => :preload do
-    exec "bundle", "exec", "sequel", "-d", @conf[:url]
+    exec "bundle", "exec", "sequel", "-d", @url
   end
 end

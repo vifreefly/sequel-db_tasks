@@ -2,10 +2,15 @@
 Rake CLI tasks for Sequel ORM and Postgres. All available tasks:
 
 ```
+rake db:create_user       # Create database user
+rake db:drop_user         # Drop database user
+
 rake db:create            # Create database
 rake db:drop              # Drop database
+
 rake db:gm[name]          # Generate migration file
 rake db:migrate[version]  # Run migrations
+
 rake db:schema:print      # Print current database schema
 ```
 
