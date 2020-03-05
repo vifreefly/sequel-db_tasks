@@ -1,12 +1,15 @@
 # All possible rails db tasks https://jacopretorius.net/2014/02/all-rails-db-rake-tasks-and-what-they-do.html
 
 namespace :db do
-  task :preload do
+  task :preload, [:skip_adapter_validation] do |t, args|
     require 'uri'
 
     @url = Sequel::DbTasks.configuration.database_url
     uri = URI.parse(@url)
-    raise "DB adapter is not postgres" if uri.scheme != "postgres"
+
+    unless args[:skip_adapter_validation]
+      raise "DB adapter is not postgres" if uri.scheme != "postgres"
+    end
   end
 
   ###
@@ -91,7 +94,7 @@ namespace :db do
   # https://github.com/jeremyevans/sequel/blob/master/doc/migration.rdoc#running-migrations-from-a-rake-task
   desc "Run migrations"
   task :migrate, [:version] do |t, args|
-    Rake::Task["db:preload"].execute
+    Rake::Task["db:preload"].execute(skip_adapter_validation: true)
     require 'sequel/core'
     require 'logger'
 
@@ -105,7 +108,8 @@ namespace :db do
 
   # https://github.com/jeremyevans/sequel/blob/master/doc/migration.rdoc#dumping-the-current-schema-as-a-migration
   desc "Print current database schema"
-  task :'schema:print' => :preload do
+  task :'schema:print' do
+    Rake::Task["db:preload"].execute(skip_adapter_validation: true)
     exec "bundle", "exec", "sequel", "-d", @url
   end
 end
