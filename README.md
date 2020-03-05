@@ -77,6 +77,8 @@ end
 after 'deploy:updated', 'deploy:migrate'
 ```
 
+* Read more about Sequel migrations syntax here: https://github.com/jeremyevans/sequel/blob/master/doc/migration.rdoc
+
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
